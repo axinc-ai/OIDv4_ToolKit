@@ -1,6 +1,7 @@
 import os
 import sys
 import cv2
+import json
 from tqdm import tqdm
 from modules.utils import images_options
 from modules.utils import bcolors as bc
@@ -52,9 +53,19 @@ def download(args, df_val, folder, dataset_dir, class_name, class_code, class_li
     else:
         class_name_list = class_name
 
-    download_img(folder, dataset_dir, class_name_list, images_list, threads)
-    if not args.sub:
-        get_label(folder, dataset_dir, class_name, class_code, df_val, class_name_list, args)
+    if args.metadata_json is not None:
+        images_list = list(images_list)
+        metadata_obj = prepare_img_metadata(folder, class_name, images_list)
+        if not args.sub:
+            metadata_obj['labels'] = prepare_label_metadata(args, class_code, df_val, images_list)
+
+        with open(args.metadata_json, 'w') as f:
+            json.dump(metadata_obj, f)
+
+    if args.noDownload is False:
+        download_img(folder, dataset_dir, class_name_list, images_list, threads)
+        if not args.sub:
+            get_label(folder, dataset_dir, class_name, class_code, df_val, class_name_list, args)
 
 
 def download_img(folder, dataset_dir, class_name, images_list, threads):
@@ -159,21 +170,19 @@ def prepare_img_metadata(folder, class_name, images_list):
 
     return metadata_obj
 
-def prepare_label_metadata(args, class_code, df_val, metadata_obj):
+def prepare_label_metadata(args, class_code, df_val, images_list):
     '''
     Instead of fetching the labels, create an object with all
     the informations of the labels.
     '''
+    obj_labels = {}
+
     if args.noLabels:
-        return
+        return obj_labels
 
     groups = df_val[(df_val.LabelName == class_code)].groupby(df_val.ImageID)
 
-    images_label_list = metadata_obj.get('image_ids')
-    obj_labels = {}
-    metadata_obj['labels'] = obj_labels
-
-    for image in images_label_list:
+    for image in images_list:
         label_boxes = []
 
         try:
@@ -194,3 +203,5 @@ def prepare_label_metadata(args, class_code, df_val, metadata_obj):
             pass
 
         obj_labels[image] = label_boxes
+
+    return obj_labels
