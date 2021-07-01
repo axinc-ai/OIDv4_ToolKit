@@ -57,4 +57,11 @@ def parser_arguments():
                         metavar="integer number",
                         help='Optional limit on number of images to download')
 
+    parser.add_argument('--metadata_json', required=False, type=str, default=None,
+                        metavar="File where to store the metadata as json object",
+                        help='File where to store the metadata as json object')
+
+    parser.add_argument('--noDownload', required=False, action='store_true',
+                       help='Do not download the files')
+
     return parser.parse_args()
