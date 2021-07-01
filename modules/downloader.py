@@ -1,4 +1,5 @@
 import os
+import sys
 import cv2
 from tqdm import tqdm
 from modules.utils import images_options
@@ -19,7 +20,11 @@ def download(args, df_val, folder, dataset_dir, class_name, class_code, class_li
     :return: None
     '''
     if os.name == 'posix':
-        rows, columns = os.popen('stty size', 'r').read().split()
+        # avoid to crash when started by docker in a build step
+        if sys.stdout.isatty():
+            rows, columns = os.popen('stty size', 'r').read().split()
+        else:
+            columns = 50
     elif os.name == 'nt':
         try:
             columns, rows = os.get_terminal_size(0)

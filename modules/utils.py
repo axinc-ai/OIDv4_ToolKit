@@ -1,4 +1,5 @@
 import os
+import sys
 from textwrap import dedent
 
 def images_options(df_val, args):
@@ -98,7 +99,12 @@ def progression_bar(total_images, index):
             columns, rows = 80, 25 # can't determine actual size - return default values
     # for linux/gnu os
     else:
-        rows, columns = os.popen('stty size', 'r').read().split()
+        # avoid to crash when started by docker in a build step
+        if sys.stdout.isatty():
+            rows, columns = os.popen('stty size', 'r').read().split()
+        else:
+            columns, rows = 80, 25 # can't determine actual size - return default values
+
     toolbar_width = int(columns) - 10
     image_index = index
     index = int(index / total_images * toolbar_width)
