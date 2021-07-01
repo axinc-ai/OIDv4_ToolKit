@@ -142,3 +142,55 @@ def get_label(folder, dataset_dir, class_name, class_code, df_val, class_list, a
                 pass
 
         print(bc.INFO + 'Labels creation completed.' + bc.ENDC)
+
+
+def prepare_img_metadata(folder, class_name, images_list):
+    '''
+    Instead of fetching the images, create an object with all
+    the informations of the dataset.
+    '''
+    metadata_obj = {
+        'bucket_type': 's3',
+        'bucket_name': 'open-images-dataset',
+        'class_name': class_name,
+        'image_ids': images_list,
+        'data_type': folder
+    }
+
+    return metadata_obj
+
+def prepare_label_metadata(args, class_code, df_val, metadata_obj):
+    '''
+    Instead of fetching the labels, create an object with all
+    the informations of the labels.
+    '''
+    if args.noLabels:
+        return
+
+    groups = df_val[(df_val.LabelName == class_code)].groupby(df_val.ImageID)
+
+    images_label_list = metadata_obj.get('image_ids')
+    obj_labels = {}
+    metadata_obj['labels'] = obj_labels
+
+    for image in images_label_list:
+        label_boxes = []
+
+        try:
+            boxes = groups.get_group(image.split('.')[0])[['XMin', 'XMax', 'YMin', 'YMax']].values.tolist()
+
+            for box in boxes:
+                # each row in a file is name of the class_name, XMin, YMix, XMax, YMax (left top right bottom)
+                # between 0 and 1
+                # normalized box coordinatess
+                label_boxes.append({
+                    'left': box[0],
+                    'top': box[2],
+                    'right': box[1],
+                    'bottom': box[3]
+                })
+
+        except Exception:
+            pass
+
+        obj_labels[image] = label_boxes
